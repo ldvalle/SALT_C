@@ -1,0 +1,47 @@
+PROGRAM = salt_efactura.exe
+
+OBJECTS = salt_efactura.o 
+
+OBJS_LIB = sqlerror.o ustring.o macmath.o directory.o retornavar.o
+
+OTROS =
+
+LXFLAGS = -lsynmail -lmail
+
+%If "$(SYSTEM)" == "AIX/RS-6000"
+.include /usr/pvcs/etc/build.def
+%Else
+.include /pvcs/etc/build.def
+%EndIf
+
+#UPDATE#
+
+salt_efactura.o : salt_efactura.ec   \
+              salt_efactura.h        \
+              codigos.h              \
+              sqlerror.h             \
+              lotes.h                \
+              pardud.h               \
+              tabla_errores.h        \
+              ustring.h					 \
+              macmath.h              \
+              synmail.h					 \
+              directory.h            \
+              retornavar.h
+
+sqlerror.o : sqlerror.ec             \
+             sqlerror.h
+
+ustring.o : ustring.c                \
+            ustring.h
+
+macmath.o : macmath.c 
+
+directory.o : directory.c				\
+              directory.h
+
+retornavar.o : retornavar.c         \
+               retornavar.h         \
+               ustring.h
+                             
+#ENDUPDATE#
