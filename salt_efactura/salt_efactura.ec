@@ -111,31 +111,46 @@ char		unxCmd[500];
 
 	while (DirectoryFetch(TdirLotes, "n", sSoloArchivoEntrada)){
 		if(ArchivoValido(sSoloArchivoEntrada)){
-			printf("Archivo [%s] VALIDO \n", sSoloArchivoEntrada);
 			memset(sArchivoTrabajo, '\0', sizeof(sArchivoTrabajo));
 			memset(unxCmd, '\0', sizeof(unxCmd));
-			
+
+
+			sprintf(sArchivoTrabajo, "%s%s", sPathEntrada, sSoloArchivoEntrada);
+/*			
 			sprintf(sArchivoTrabajo, "%s%s.txt", sPathRepo, sSoloArchivoEntrada);
+			
 			sprintf(unxCmd, "dos2ux %s%s > %s ", sPathEntrada, sSoloArchivoEntrada, sArchivoTrabajo);
 			if (system(unxCmd) != 0){
 				printf("Error al convertir archivo [%s] a Unix.\n%s", sSoloArchivoEntrada, unxCmd);
 				exit(1);
 			}
+			
 			sprintf(unxCmd, "mv -f %s%s %s%s", sPathEntrada, sSoloArchivoEntrada, sPathRepo, sSoloArchivoEntrada);
 			if (system(unxCmd) != 0){
 				printf("Error al mover archivo [%s] al repositorio.\n", sSoloArchivoEntrada);
 				exit(1);
 			}
+*/
+
+			
+			
 			if(! AbreArchivos(sSoloArchivoEntrada, sArchivoTrabajo)){
 				exit(1);
 			}
 			if(ProcesaArchivo()){
 				cantProcesada++;
+				sprintf(unxCmd, "mv -f %s%s %s%s", sPathEntrada, sSoloArchivoEntrada, sPathRepo, sSoloArchivoEntrada);
+				if (system(unxCmd) != 0){
+					printf("Error al mover archivo [%s] al repositorio.\n", sSoloArchivoEntrada);
+					exit(1);
+				}				
+/*				
 				sprintf(unxCmd, "rm -f %s", sArchivoTrabajo);
 				if (system(unxCmd) != 0){
 					printf("Error al borrar archivo [%s] ya procesado.\n", sArchivoTrabajo);
 					exit(1);
 				}				
+*/				
 			}else{
 				printf("Archivo [%s] NO se pudo procesar\n", sSoloArchivoEntrada);
 				sprintf(unxCmd, "rm -f %s", sArchivoTrabajo);
@@ -308,32 +323,37 @@ void CerrarArchivos(void){
 short ProcesaArchivo(){
 char				sLinea[1000];
 $ClsEfactura	reg;
+long   			iLinea;
 
 	fgets(sLinea, 1000, pFileEntrada);
-	
+	iLinea=0;
 	while (!feof(pFileEntrada)){
-		clientesProcesados++;
-		CargaRegistro( sLinea, &reg);
-		
-		printf("Cliente: %ld  correos:%s M1:[%s] M2:[%s] M3:[%s]\n", reg.cuentaContrato, reg.email, reg.email_1, reg.email_2, reg.email_3);
-		
-		if(ValidoRegistro(reg)){
-			if(reg.iAccion==1){
-				/* Proceso el alta */
-				if(!ProcesaAlta(reg)){
-					clientesRechazados++;
-				}
-			}else{
-				/* Proceso la baja */
-				if(!ProcesaBaja(reg)){
-					clientesRechazados++;
-				}				
-			}
+		if(iLinea > 0){
+			clientesProcesados++;
+			CargaRegistro( sLinea, &reg);
 			
-		}else{
-			clientesRechazados++;
+			/*printf("Cliente: %ld  correos:%s M1:[%s] M2:[%s] M3:[%s]\n", reg.cuentaContrato, reg.email, reg.email_1, reg.email_2, reg.email_3);*/
+
+			if(ValidoRegistro(reg)){
+				if(reg.iAccion==1){
+					/* Proceso el alta */
+					if(!ProcesaAlta(reg)){
+						clientesRechazados++;
+					}
+				}else{
+					/* Proceso la baja */
+					if(!ProcesaBaja(reg)){
+						clientesRechazados++;
+					}				
+				}
+				
+			}else{
+				clientesRechazados++;
+			}
+
 		}
 		fgets(sLinea, 1000, pFileEntrada);
+		iLinea++;
 	}
 	
 	return 1;
@@ -384,23 +404,32 @@ $ClsEfactura	*reg;
 		sCampo=strtok(NULL, "|");
 		i++;
 	}
+	alltrim(reg->email, ' ');
 	
-	sCampo=strtok(reg->email, ";");
-	i=1;
-	while(sCampo){
-		switch(i){
-			case 1:
-				strcpy(reg->email_1, sCampo);
-				break;
-			case 2:
-				strcpy(reg->email_2, sCampo);
-				break;
-			case 3:
-				strcpy(reg->email_3, sCampo);
-				break;			
+	if(strcmp(reg->email, "false")==0){
+		
+		strcpy(reg->email, "");
+		strcpy(reg->estado, "false");
+	}
+	
+	if(strcmp(reg->email, "")!=0){
+		sCampo=strtok(reg->email, ";");
+		i=1;
+		while(sCampo){
+			switch(i){
+				case 1:
+					strcpy(reg->email_1, sCampo);
+					break;
+				case 2:
+					strcpy(reg->email_2, sCampo);
+					break;
+				case 3:
+					strcpy(reg->email_3, sCampo);
+					break;			
+			}
+			sCampo=strtok(NULL, ";");
+			i++;
 		}
-		sCampo=strtok(NULL, ";");
-		i++;
 	}
 
 	if(strcmp(reg->estado, "true")==0 || strcmp(reg->estado, "True")==0 || strcmp(reg->estado, "TRUE")==0){
